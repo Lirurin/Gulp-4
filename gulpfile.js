@@ -1,6 +1,7 @@
 var gulp = require('gulp'),
 glp = require('gulp-load-plugins'),
 pug = require('gulp-pug'),
+babel = require('gulp-babel'),
 browserSync = require('browser-sync').create();
 plugins = glp();
 
@@ -49,6 +50,9 @@ gulp.task('stylus', function(done) {
 //JS
 gulp.task('scripts', function(done) {
 	return gulp.src(['app/js/**/*.js', 'app/js/main.js'])
+	.pipe(babel({
+		presets: ['@babel/env']
+	}))
 	.pipe(plugins.concat('main.js'))
 	.pipe(plugins.uglify())
 	.pipe(gulp.dest('dist/js'))
@@ -83,7 +87,7 @@ gulp.task('watch', function() {
 	gulp.watch('app/**/*.css', gulp.series('stylus'))
 	gulp.watch('app/js/**/*.js', gulp.series('scripts'))		
 	gulp.watch('app/font/**/*.*', gulp.series('fonts'))		
-	gulp.watch('app/*.pug', gulp.series('pug'))
+	gulp.watch('app/*.pug', gulp.series('pug'))	
 	gulp.watch('app/*.html', gulp.series('indexmin')).on('change', browserSync.reload)										  	 
 });
 //user tasks
