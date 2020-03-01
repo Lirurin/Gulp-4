@@ -1,26 +1,27 @@
-var gulp = require('gulp'),
+const gulp = require('gulp'),
 	glp = require('gulp-load-plugins')(),
 	del = require('del'),
-	imagemin = require('gulp-imagemin'),
+    browserify = require('browserify'),
+    babelify = require('babelify'),
+    source = require('vinyl-source-stream'),
+	buffer = require('vinyl-buffer'),
 	browserSync = require('browser-sync').create();
 
 gulp.task('pug', function() {
-	return gulp.src('app/pug/*.pug')
+	return gulp.src('app/*.pug')
 	.pipe(glp.pug({
-		pretty: true 
+		pretty: true
 	}))
 	.pipe(gulp.dest('dist/'))
 	.on('end', browserSync.reload)
 });
 
-gulp.task('stylus:conc', function() {
-	return gulp.src('app/stylus/*.styl')
+gulp.task('stylus', function() {
+	return gulp.src('app/css/*.styl')
 	.pipe(glp.stylus({
 		'include css': true
 	}))
-	.pipe(glp.autoprefixer({
-		browsers: ['ie >= 8', 'last 4 version']
-	}))
+	.pipe(glp.autoprefixer({}))
 	.pipe(glp.concat('main.css'))
 	// .pipe(glp.csso())
 	.pipe(gulp.dest('dist/css'))
@@ -28,14 +29,9 @@ gulp.task('stylus:conc', function() {
 		stream: true
 	}))
 });
-gulp.task('stylus:no-conc', function() {
-	return gulp.src('app/stylus/noconcat/*.styl')
-	.pipe(glp.stylus({
-		'include css': true
-	}))
-	.pipe(glp.autoprefixer({
-		browsers: ['ie >= 8', 'last 4 version']
-	}))
+
+gulp.task('css', function() {
+	return gulp.src('app/css/*.css')
 	// .pipe(glp.csso())
 	.pipe(gulp.dest('dist/css'))
 	.pipe(browserSync.reload({
@@ -43,16 +39,15 @@ gulp.task('stylus:no-conc', function() {
 	}))
 });
 
+
 gulp.task('scripts', function() {
-	return gulp.src('app/js/*.js')
-	// .pipe(glp.browserify({
-	// 	insertGlobals : true
-	// }))
-	.pipe(glp.babel({
-		"presets": ["@babel/preset-env"]
-	}))
-	// .pipe(glp.uglify())
-	.pipe(gulp.dest('dist/js'))
+    return browserify('app/js/main.js')
+        .transform('babelify', {presets: ["@babel/preset-env"]})
+        .bundle()
+        .pipe(source('app.js'))
+        .pipe(buffer())
+        .pipe(glp.uglify())
+        .pipe(gulp.dest('dist/js'))
 	.pipe(browserSync.reload({
 		stream: true
 	}))
@@ -66,25 +61,10 @@ gulp.task('scripts:libs', function() {
 		stream: true
 	}))
 });
-gulp.task('scripts:scripts', function() {
-	return gulp.src('app/js/scripts/*.js')
-	.pipe(glp.uglify())
-	.pipe(gulp.dest('dist/js/scripts'))
-	.pipe(browserSync.reload({
-		stream: true
-	}))
-});
 
 gulp.task('static', function() {
 	return gulp.src('app/static/**/*.*')
 	.pipe(gulp.dest('dist/'))
-	.pipe(browserSync.reload({
-		stream: true
-	}))
-});
-gulp.task('fonts', function() {
-	return gulp.src('app/fonts/**/*.*')
-	.pipe(gulp.dest('dist/css/fonts/'))
 	.pipe(browserSync.reload({
 		stream: true
 	}))
@@ -100,18 +80,28 @@ gulp.task('img:dev', function() {
 
 gulp.task('img:build', function() {
 	return gulp.src('app/img/**/*.*')
-	.pipe(imagemin([
-		imagemin.gifsicle({interlaced: true}),
-		imagemin.jpegtran({progressive: true}),
-		imagemin.optipng({optimizationLevel: 5}),
-		imagemin.svgo({
-			plugins: [
-				{removeViewBox: true},
-				{cleanupIDs: false}
-			]
-		})
-	]))
+	.pipe(glp.tinypng('Kk_P4FyRoQGwHhY6jEVHty1sIfNxFkKN'))
 	.pipe(gulp.dest('dist/img'))
+});
+
+gulp.task('html:dev', function() {
+    return gulp.src('app/*.html')
+        .pipe(gulp.dest('dist'))
+});
+
+gulp.task('html:build', function() {
+	return gulp.src('app/*.html')
+	.pipe(gulp.dest('dist'))
+});
+
+gulp.task('favicon:build', function() {
+    return gulp.src('app/favicon/*.*')
+        .pipe(gulp.dest('dist/favicon'))
+});
+
+gulp.task('font:build', function() {
+	return gulp.src('app/font/*.*')
+		.pipe(gulp.dest('dist/font'))
 });
 
 gulp.task('clean', function() {
@@ -121,30 +111,29 @@ gulp.task('clean', function() {
 gulp.task('serve', function() {
 	browserSync.init({
 		server: {
-			injectChanges: true,
 			baseDir: 'dist/'
 		}
 	})
 });
 
 gulp.task('watch', function() {
-	gulp.watch('app/**/**/*.pug', gulp.series('pug'))
-	gulp.watch('app/**/**/*.styl', gulp.series('stylus:no-conc'))
-	gulp.watch('app/**/**/*.css', gulp.series('stylus:no-conc'))
-	gulp.watch('app/**/**/*.styl', gulp.series('stylus:conc'))
-	gulp.watch('app/**/**/*.css', gulp.series('stylus:conc'))
-	gulp.watch('app/**/**/*.js', gulp.series('scripts'))
-	gulp.watch('app/js/libs/*.js', gulp.series('scripts:libs'))
-	gulp.watch('app/js/scripts/*.js', gulp.series('scripts:scripts'))
-	gulp.watch('app/static/**/*.*', gulp.series('static'))
-	gulp.watch('app/img/**/*.png', gulp.series('img:dev'))
+	gulp.watch('app/**/**/*.pug', gulp.series('pug'));
+	gulp.watch('app/**/**/*.styl', gulp.series('stylus'));
+	gulp.watch('app/**/**/*.css', gulp.series('stylus'));
+	gulp.watch('app/**/**/*.js', gulp.series('scripts'));
+	gulp.watch('app/js/libs/*.js', gulp.series('scripts:libs'));
+	gulp.watch('app/static/**/*.*', gulp.series('static'));
+	gulp.watch('app/img/**/*.*', gulp.series('img:dev'));
+	gulp.watch('app/*.html', gulp.series('html:dev'))
+	gulp.watch('app/css/*.css', gulp.series('css'))
 });
 
 gulp.task('default', gulp.series(
-	gulp.parallel('pug', 'stylus:conc', 'stylus:no-conc', 'scripts:libs', 'scripts:scripts', 'scripts', 'fonts', 'static', 'img:dev'), 
+	gulp.parallel('pug', 'stylus', 'scripts:libs', 'scripts', 'static', 'img:dev', 'html:dev', 'css'),
 	gulp.parallel('serve', 'watch')
 ));
 
 gulp.task('build', gulp.series(
-	'clean', 'pug', 'stylus:conc', 'stylus:no-conc', 'scripts', 'scripts:libs', 'scripts:scripts','fonts', 'static', 'img:build'
+	// 'clean', 'pug', 'stylus', 'scripts', 'scripts:libs', 'static', 'img:build'
+	'clean', 'pug', 'stylus', 'css', 'scripts', 'scripts:libs', 'static', 'html:build', 'font:build', 'favicon:build'
 ));
