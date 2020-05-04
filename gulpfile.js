@@ -137,3 +137,14 @@ gulp.task('build', gulp.series(
 	// 'clean', 'pug', 'stylus', 'scripts', 'scripts:libs', 'static', 'img:build'
 	'clean', 'pug', 'stylus', 'css', 'scripts', 'scripts:libs', 'static', 'html:build', 'font:build', 'favicon:build'
 ));
+
+gulp.task('dirs', function () {
+	return gulp.src('*.*', {read: false})
+		.pipe(gulp.dest('./app'))
+		.pipe(gulp.dest('./app/css'))
+		.pipe(gulp.dest('./app/favicon'))
+		.pipe(gulp.dest('./app/font'))
+		.pipe(gulp.dest('./app/img'))
+		.pipe(gulp.dest('./app/js'))
+		.pipe(gulp.dest('./dist'))
+});
